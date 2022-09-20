@@ -2,33 +2,49 @@ from instaloader import Instaloader,Profile
 import threading
 import shutil
 import os
+import time
+import random
 from dotenv import load_dotenv
 
 load_dotenv()
+status = ""
+isLoggedIn = False
 
+def get_status():
+    return status
 
 profile_instance = Instaloader()
 
-def login(profile):
+def login():
+    global profile_instance
+    global isLoggedIn
+    
     name = os.getenv("username")
     passw = os.getenv("password")
-    profile.login(name,passw)
+    profile_instance.login(name,passw)
+    isLoggedIn = True
     
 
 def fetch_posts(user):
 
-    login(profile_instance)
+    global status
+    status = ""
+    
 
     try:
         prof = Profile.from_username(profile_instance.context, user)
         print(prof)
         posts = prof.get_posts()
+        if(posts.count > 100):
+            status = "limit_exceeded"
+            return
     except:
         raise FileNotFoundError
     
 
     for post in posts:
         try:
+            time.sleep(random.randint(0,5)/10.0)
             task = threading.Thread(target=profile_instance.download_post, args=(post,user,))
             task.start()
         except:

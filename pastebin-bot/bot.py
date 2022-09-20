@@ -5,7 +5,7 @@ import telebot
 import os, subprocess, threading
 from request import file_writer, file_remover
 from insta_profile import profile_downloader, profile_delete
-from insta_all_pictures import fetch_posts,profile_delete
+from insta_all_pictures import fetch_posts,profile_delete,get_status,login,isLoggedIn
 from qr_generator import generate_qr, delete_qr
 from quotes import preload_quotes, quotes
 from random import randint
@@ -106,12 +106,20 @@ def handle_insta(message):
     data = message.text
     username = data[6::]
     try:
+        if(isLoggedIn == False):
+            login()
+
         task = threading.Thread(target=fetch_posts, args=(username,))
         task.start()
         bot.reply_to(
             message,f'Getting posts of {username} for you. \nPlease wait for a moment.'
         )
         task.join()
+
+        if (get_status() == "limit_exceeded"):
+            bot.reply_to(message, f"Limit exceeded for {username}.\nCannot fetch more than 200 posts")
+            return
+            
         for root,subdirs,files in os.walk(username, topdown=False):
             for file in files:
                 if os.path.splitext(file)[1].lower() in (".jpg", ".jpeg"):
